@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
     cancelOrder,
+    calculateShippingCost,
     getBuyersOrders,
     getSellersOrders,
     initiatePayment,
@@ -23,6 +24,9 @@ router.use((req, res, next) => {
 
 router.get("/buyer/:id", authenticate, getBuyersOrders);
 router.get("/seller/:id", authenticate, getSellersOrders);
+
+// Calculate shipping cost (for cart preview)
+router.post("/calculate-shipping", calculateShippingCost);
 
 // new initiate-payment (mpesa only)
 router.post(

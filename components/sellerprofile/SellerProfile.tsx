@@ -108,8 +108,8 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ onClose }) => {
 							style={styles.avatarImage}
 						/>
 					</View>
-					<Text style={styles.shopTitle}>Crafted Creations</Text>
-					<Text style={styles.shopLocation}>Nairobi, Kenya</Text>
+					<Text style={styles.shopTitle}>My Shop</Text>
+					<Text style={styles.shopLocation}>Kenya</Text>
 				</View>
 
 				{/* Shop Details */}

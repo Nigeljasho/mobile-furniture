@@ -4,16 +4,10 @@ import Cart from "../models/cart.models";
 import MpesaTransaction from "../models/mpesa.models";
 import Order from "../models/orde.models";
 import Product from "../models/product.models";
+import User from "../models/user.models";
 import { mpesaController } from "../services/mpesa.controller";
+import { getShippingInfo } from "../utils/distanceUtils";
 import { logger } from "../utils/logger";
-
-// Helper function to calculate shipping
-const calculateRandomShipping = (subtotal: number): number => {
-  if (subtotal <= 0) return 0;
-  const maxShipping = subtotal / 2;
-  const randomShipping = Math.random() * maxShipping;
-  return Math.round(randomShipping); // Round to nearest whole number
-};
 
 export const initiatePayment = async (req: Request, res: Response) => {
   logger.info("🔥 🔥 🔥 INITIATE PAYMENT CALLED 🔥 🔥 🔥");
@@ -93,7 +87,33 @@ export const initiatePayment = async (req: Request, res: Response) => {
 
     logger.info(`✅ Stock reduced for all ${orderItems.length} items`);
 
-    const shipping = calculateRandomShipping(subTotal);
+    // Get seller's location for shipping calculation
+    const seller = await User.findById(sellerId);
+    const sellerCity = seller?.location?.city || "Nairobi"; // Default to Nairobi if not set
+    const buyerCity = shippingInfo?.city || "Nairobi";
+
+    logger.info(`📍 Calculating shipping from seller (${sellerCity}) to buyer (${buyerCity})`);
+
+    // Calculate shipping based on distance
+    let shipping = 1500; // Default fallback shipping fee
+    const shippingResult = await getShippingInfo(
+      sellerCity,
+      buyerCity,
+      (seller?.location?.latitude) as number | undefined,
+      (seller?.location?.longitude) as number | undefined
+    );
+
+    if (shippingResult) {
+      shipping = shippingResult.fee;
+      logger.info(
+        `📦 Shipping calculated: ${shippingResult.distance}km = Ksh ${shipping}`
+      );
+    } else {
+      logger.warn(
+        `⚠️ Could not calculate distance-based shipping, using default: Ksh ${shipping}`
+      );
+    }
+
     const total = Math.round(subTotal + shipping);
 
     logger.info(
@@ -483,5 +503,66 @@ export const cancelOrder = async (req: Request, res: Response) => {
     session.endSession();
     logger.error("Failed to cancel order", err);
     return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+/**
+ * Calculate shipping cost for a specific product and buyer's delivery city
+ * Used for cart preview before checkout
+ */
+export const calculateShippingCost = async (req: Request, res: Response) => {
+  try {
+    const { productId, buyerCity } = req.body;
+
+    if (!productId || !buyerCity) {
+      return res.status(400).json({
+        message: "Product ID and buyer city are required",
+      });
+    }
+
+    logger.info(
+      `📍 Calculating shipping for product ${productId} to ${buyerCity}`
+    );
+
+    const product = await Product.findById(productId).populate("seller");
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const seller = product.seller as any;
+    const sellerCity = seller?.location?.city || "Nairobi";
+
+    const shippingResult = await getShippingInfo(
+      sellerCity,
+      buyerCity,
+      seller?.location?.latitude,
+      seller?.location?.longitude
+    );
+
+    if (!shippingResult) {
+      logger.warn(`⚠️ Could not calculate shipping, returning default fee`);
+      return res.status(200).json({
+        message: "Using default shipping fee",
+        distance: null,
+        fee: 1500,
+        sellerCity,
+        buyerCity,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      distance: shippingResult.distance,
+      fee: shippingResult.fee,
+      sellerCity,
+      buyerCity,
+    });
+  } catch (error) {
+    logger.error(
+      `❌ Error calculating shipping: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+    return res.status(500).json({
+      message: "Error calculating shipping cost",
+    });
   }
 };

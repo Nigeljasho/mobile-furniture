@@ -72,7 +72,7 @@ declare global {
 }
 
 export const register = async (req: Request, res: Response) => {
-  const { fullName, email, password, role } = req.body;
+  const { fullName, email, password, role, location } = req.body;
 
   try {
     //check if user exists
@@ -90,6 +90,15 @@ export const register = async (req: Request, res: Response) => {
       email,
       password: hashedPassword,
       role,
+      // Save location for sellers if provided
+      ...(location && {
+        location: {
+          city: location.city || undefined,
+          address: location.address || undefined,
+          latitude: location.latitude || undefined,
+          longitude: location.longitude || undefined,
+        },
+      }),
     });
 
     await newUser.save();
@@ -101,7 +110,7 @@ export const register = async (req: Request, res: Response) => {
       token,
     });
   } catch (err) {
-    logger.error("Failed To register User", err);
+    logger.error("Error registering user", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -151,5 +160,53 @@ export const getUserProfile = async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Unable to get user");
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updateSellerLocation = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res
+      .status(401)
+      .json({ success: false, message: "Authentication required" });
+    return;
+  }
+
+  const { city, address, latitude, longitude } = req.body;
+
+  try {
+    if (!city || !address) {
+      res
+        .status(400)
+        .json({ message: "City and address are required" });
+      return;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        location: {
+          city,
+          address,
+          latitude: latitude || undefined,
+          longitude: longitude || undefined,
+        },
+      },
+      { new: true }
+    ).select("-password");
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    logger.info(`✅ Seller location updated: ${city}, ${address}`);
+    res.status(200).json({
+      message: "Location updated successfully",
+      user,
+    });
+  } catch (err) {
+    logger.error("Error updating seller location:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };

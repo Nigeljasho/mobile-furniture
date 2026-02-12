@@ -105,7 +105,6 @@ const SellerInterface: React.FC<SellerInterfaceProps> = ({ onBack }) => {
 					style={styles.avatar}
 				/>
 				<Text style={styles.name}>{user?.fullName}</Text>
-				<Text style={styles.since}>Seller since 2021</Text>
 			</View>
 
 			{/* Stats */}

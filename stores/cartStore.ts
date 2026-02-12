@@ -1,8 +1,15 @@
-import { addTocart, getCart, removeFromCart, updateCart as updateCartApi } from "@/SERVICE/api";
+import { addToCart, getCart, removeFromCart, updateCart as updateCartApi } from "@/SERVICE/api";
 import { CartItem, Product } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+
+console.log("🔍 Checking imports from @/SERVICE/api:", {
+	hasAddToCart: typeof addToCart,
+	hasGetCart: typeof getCart,
+	hasRemoveFromCart: typeof removeFromCart,
+	hasUpdateCartApi: typeof updateCartApi,
+});
 
 type CartState = {
 	items: CartItem[];
@@ -52,6 +59,10 @@ export const useCartStore = create<CartState>()(
 			userId: null,
 
 			addItem: async (product, qty = 1) => {
+				if (typeof addToCart !== 'function') {
+					throw new Error(`addToCart is not imported correctly. Type: ${typeof addToCart}`);
+				}
+				
 				// Store previous state for potential revert
 				const prevItems = get().items;
 
@@ -71,11 +82,17 @@ export const useCartStore = create<CartState>()(
 
 				try {
 					// Backend gets userId from JWT token automatically
-					await addTocart({
+					console.log("📤 Calling addToCart with:", {
 						productId: product.id,
 						quantity: qty,
+						price: product.price, // Pass price to backend
 					});
-					console.log("Product added to cart");
+					await addToCart({
+						productId: product.id,
+						quantity: qty,
+						
+					});
+					console.log("✅ Product added to cart");
 				} catch (err: any) {
 					// Revert optimistic update on failure
 					set({ items: prevItems });

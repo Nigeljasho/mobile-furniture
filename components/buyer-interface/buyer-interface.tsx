@@ -1,26 +1,26 @@
-import { calculateRandomShipping } from "@/SERVICE/shippingUtils";
+import { calculateShipping } from "@/SERVICE/shippingUtils";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrderStore } from "@/stores/orderStore";
 import { useProductStore } from "@/stores/productStore";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
-    SafeAreaView,
-    useSafeAreaInsets,
+  SafeAreaView,
+  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import Profile from "../buyerprofile/profile";
 import Cart from "../cart/cart";
@@ -64,7 +64,7 @@ const BuyerInterface = () => {
   // Calculate shipping cost whenever cart subtotal changes
   useEffect(() => {
     const subtotal = getSubtotal();
-    const newShipping = calculateRandomShipping(subtotal);
+    const newShipping = calculateShipping(subtotal);
     setShippingCost(newShipping);
   }, [cartItems]);
 
@@ -76,10 +76,20 @@ const BuyerInterface = () => {
 
   const handleAddToCart = async (product: any) => {
     try {
+      console.log("🛒 Adding product to cart:", {
+        product: product.id,
+        name: product.name,
+        price: product.price,
+      });
       await addItem(product, 1);
-      console.log("Product added to cart");
-    } catch (error) {
-      console.error("Failed to add product to cart:", error);
+      console.log("✅ Product added to cart successfully");
+    } catch (error: any) {
+      console.error("❌ Failed to add product to cart:", {
+        error: error?.message || error,
+        productId: product.id,
+        productName: product.name,
+        productPrice: product.price,
+      });
     }
   };
 
@@ -115,6 +125,10 @@ const BuyerInterface = () => {
         <Text style={[styles.stockInfo, !isInStock && styles.outOfStock]}>
           {isInStock ? `Stock: ${item.stock}` : "Out of Stock"}
         </Text>
+        {/* location */}
+        
+        <Text style={styles.locationInfo}>{item.sellerLocation.city}</Text>
+
         <View style={styles.cardRow}>
           <Text style={styles.cardPrice}>
             Ksh {item.price?.toLocaleString()}
@@ -705,6 +719,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
   },
+  locationInfo: {
+    fontSize: 12,
+    color: "#7CB798",
+    alignSelf: "flex-start",
+    },
 });
 
 export default BuyerInterface;

@@ -1,14 +1,17 @@
 import { useAuthStore } from "@/stores/authStore";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import * as Location from "expo-location";
+import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+	ActivityIndicator,
+	Alert,
+	Dimensions,
+	Pressable,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View
 } from "react-native";
 
 type RegisterProps = {
@@ -21,17 +24,93 @@ const Register: React.FC<RegisterProps> = ({ onShowLogin }) => {
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
 	const [role, setRole] = useState<"buyer" | "seller">("buyer");
+	const [location, setLocation] = useState("");
+	const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 	const { register, isLoading, error } = useAuthStore();
 
-	//const router = useRouter();
+	// Show error as pop-up when it occurs
+	useEffect(() => {
+		if (error) {
+			Alert.alert("Registration Error", error);
+		}
+	}, [error]);
+
+	const handleDetectLocation = async () => {
+		setIsDetectingLocation(true);
+		try {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				Alert.alert(
+					"Permission Denied",
+					"❌ Location permission is required to auto-detect your location. Please enable it in settings or enter your city manually."
+				);
+				setIsDetectingLocation(false);
+				return;
+			}
+
+			const currentLocation = await Location.getCurrentPositionAsync({});
+			const { latitude, longitude } = currentLocation.coords;
+
+			// Reverse geocode to get city name
+			const reverseGeocode = await Location.reverseGeocodeAsync({
+				latitude,
+				longitude,
+			});
+
+			if (reverseGeocode && reverseGeocode.length > 0) {
+				const city = reverseGeocode[0].city || reverseGeocode[0].region || "Unknown";
+				setLocation(city);
+				Alert.alert("Success", `📍 Location detected: ${city}`);
+			} else {
+				Alert.alert(
+					"Location Error",
+					"❌ Could not determine your city name from GPS. Please enter your city manually."
+				);
+			}
+		} catch (err) {
+			Alert.alert(
+				"Location Detection Failed",
+				"❌ Unable to detect your location. Please enter your city manually."
+			);
+		} finally {
+			setIsDetectingLocation(false);
+		}
+	};
 
 	const handleSubmit = async () => {
-		if (!fullName || !email || !password) return;
+		// Validate common fields
+		if (!fullName || !email || !password) {
+			Alert.alert("Validation Error", "Please fill in all required fields");
+			return;
+		}
+
+		// Location is optional for both buyers and sellers during registration
+		// (will be required when uploading products for sellers)
+
 		try {
-			await register({ fullName, email, password, role });
-			onShowLogin?.();
+			const registrationData: any = { fullName, email, password, role };
+
+			// Include location if provided (optional for both)
+			if (location.trim()) {
+				registrationData.location = {
+					city: location,
+					address: location,
+				};
+			}
+
+			await register(registrationData);
+			Alert.alert(
+				"Registration Successful",
+				`Welcome ${fullName}! 🎉\n\nYour account has been created successfully. Please login with your credentials.`,
+				[
+					{
+						text: "OK",
+						onPress: () => onShowLogin?.(),
+					},
+				]
+			);
 		} catch (err) {
-			console.error("Failed to register user", err);
+			// Error is handled by useEffect hook that displays Alert
 		}
 	};
 
@@ -85,6 +164,32 @@ const Register: React.FC<RegisterProps> = ({ onShowLogin }) => {
 					/>
 				</TouchableOpacity>
 			</View>
+			{/* Location Section */}
+			<View style={styles.locationContainer}>
+				<View style={styles.locationInputWrapper}>
+					<TextInput
+						style={styles.locationInput}
+						placeholder="Location (Optional)"
+						placeholderTextColor="#7CB798"
+						value={location}
+						onChangeText={setLocation}
+						editable={!isDetectingLocation}
+					/>
+				</View>
+				<TouchableOpacity
+					style={[styles.detectBtn, isDetectingLocation && styles.detectBtnDisabled]}
+					onPress={handleDetectLocation}
+					disabled={isDetectingLocation}
+					accessible={true}
+					accessibilityLabel={`${role === "seller" ? "Auto-detect Location (Recommended for Sellers)" : "Auto-detect Location"}`}
+				>
+					{isDetectingLocation ? (
+						<ActivityIndicator size="small" color="#fff" />
+					) : (
+						<Ionicons name="locate" size={20} color="#fff" />
+					)}
+				</TouchableOpacity>
+			</View>
 			{/* Role Toggle */}
 			<View style={styles.roleRow}>
 				<Pressable
@@ -126,9 +231,6 @@ const Register: React.FC<RegisterProps> = ({ onShowLogin }) => {
 			>
 				<Text style={styles.createBtnText}>Create Account</Text>
 			</TouchableOpacity>
-			{!!error && (
-				<Text style={{ color: "red", textAlign: "center" }}>{error}</Text>
-			)}
 			{/* Sign in link */}
 			<View style={{ flex: 1 }} />
 			<Text style={styles.signinText}>
@@ -252,6 +354,36 @@ const styles = StyleSheet.create({
 	signinLink: {
 		color: "#38E472",
 		fontWeight: "bold",
+	},
+	locationContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 14,
+		gap: 8,
+	},
+	locationInputWrapper: {
+		flex: 1,
+	},
+	locationInput: {
+		backgroundColor: "#E7F3EC",
+		borderRadius: 6,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		fontSize: 15,
+		color: "#222",
+		width: "100%",
+	},
+	detectBtn: {
+		backgroundColor: "#38E472",
+		borderRadius: 6,
+		width: 48,
+		height: 48,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	detectBtnDisabled: {
+		backgroundColor: "#A8D5B8",
+		opacity: 0.6,
 	},
 });
 

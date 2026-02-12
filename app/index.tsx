@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
+import { setAuthToken } from "@/SERVICE/api";
 import React, { useEffect, useState } from "react";
 import BuyerInterface from "../components/buyer-interface/buyer-interface";
 import Login from "../components/login/login";
@@ -23,6 +24,19 @@ export default function Index() {
 			unsub?.();
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!hydrated) return;
+
+		// Set auth token on axios after hydration
+		if (token) {
+			setAuthToken(token);
+			console.log("🔐 Auth token set on axios instance");
+		} else {
+			setAuthToken(null);
+			console.log("🔐 Auth token cleared from axios instance");
+		}
+	}, [token, hydrated]);
 
 	useEffect(() => {
 		if (!hydrated) return; 

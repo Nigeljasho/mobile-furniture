@@ -1,4 +1,6 @@
 import { api } from "@/SERVICE/api";
+import { useRoute } from "@react-navigation/native";
+
 
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
@@ -53,7 +55,7 @@ const Checkout: React.FC<CheckoutProps> = ({
 
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [address, setAddress] = useState("");
-  const [city, setCity] = useState("Nairobi");
+  const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(user?.email || "");
   const [mpesaPhone, setMpesaPhone] = useState("");
@@ -278,6 +280,7 @@ const Checkout: React.FC<CheckoutProps> = ({
           <Text style={styles.summaryValue}>KES {subtotal}</Text>
         </View>
         <View style={styles.summaryRow}>
+          {/* shipping from cart */}
           <Text style={styles.summaryLabel}>Shipping</Text>
           <Text style={styles.summaryValue}>KES {shipping}</Text>
         </View>
@@ -304,7 +307,7 @@ const Checkout: React.FC<CheckoutProps> = ({
         />
         <TextInput
           style={styles.input}
-          placeholder="Nairobi"
+          placeholder="Enter your city"
           value={city}
           onChangeText={setCity}
           editable={!isLoading}

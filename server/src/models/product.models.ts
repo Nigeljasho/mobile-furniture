@@ -41,6 +41,21 @@ const productSchema = new Schema(
 			type: Number,
 			default: 0,
 		},
+		// Store seller location at time of product creation for historical accuracy
+		sellerLocation: {
+			city: {
+				type: String,
+				required: false,
+			},
+			latitude: {
+				type: Number,
+				required: false,
+			},
+			longitude: {
+				type: Number,
+				required: false,
+			},
+		},
 	},
 	{ timestamps: true }
 );

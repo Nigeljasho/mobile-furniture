@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
 import { logger } from "../utils/logger";
 
-const mongoUri = process.env.MONGO_URI
+const mongoUrl = process.env.MONGOURL
 
-if (!mongoUri){
-    throw new Error("MONGOURI is not defined in the environment variables");
+if (!mongoUrl){
+    throw new Error("MONGOURL is not defined in the environment variables");
     
 }
 
 export const connectDB = async () =>{
     try{
-       await mongoose.connect(mongoUri);
+    await mongoose.connect(mongoUrl);
         logger.info("Connected to mongo successfully")
     } catch(err){
         logger.error("Monog connection failed", err)

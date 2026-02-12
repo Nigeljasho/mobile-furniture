@@ -2,6 +2,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useProductStore } from "@/stores/productStore";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import React, { useState } from "react";
 import {
 	Alert,
@@ -13,6 +14,7 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
+	ActivityIndicator,
 } from "react-native";
 
 type SellerProductsProps = {
@@ -25,6 +27,8 @@ const SellerProducts: React.FC<SellerProductsProps> = ({ onClose }) => {
 	const [description, setDescription] = useState("");
 	const [category, setCategory] = useState("");
 	const [stock, setStock] = useState("1");
+	const [location, setLocation] = useState("");
+	const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const [imageModal, setImageModal] = useState(false);
 	const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -34,6 +38,47 @@ const SellerProducts: React.FC<SellerProductsProps> = ({ onClose }) => {
 	const id = user?.id;
 
 	const categories = ["tables", "chairs", "desks", "sofas", "cabinets"];
+
+	const handleDetectLocation = async () => {
+		setIsDetectingLocation(true);
+		try {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				Alert.alert(
+					"Permission Denied",
+					"Location permission is required. Please enable it in settings."
+				);
+				setIsDetectingLocation(false);
+				return;
+			}
+
+			const currentLocation = await Location.getCurrentPositionAsync({});
+			const { latitude, longitude } = currentLocation.coords;
+
+			const reverseGeocode = await Location.reverseGeocodeAsync({
+				latitude,
+				longitude,
+			});
+
+			if (reverseGeocode && reverseGeocode.length > 0) {
+				const city = reverseGeocode[0].city || reverseGeocode[0].region || "Unknown";
+				setLocation(city);
+				Alert.alert("Success", `📍 Location detected: ${city}`);
+			} else {
+				Alert.alert(
+					"Location Error",
+					"Could not determine your city. Please enter manually."
+				);
+			}
+		} catch (err) {
+			Alert.alert(
+				"Location Detection Failed",
+				"Unable to detect location. Please enter manually."
+			);
+		} finally {
+			setIsDetectingLocation(false);
+		}
+	};
 
 	const pickImage = async () => {
 		// Request permission
@@ -66,8 +111,9 @@ const SellerProducts: React.FC<SellerProductsProps> = ({ onClose }) => {
 				Alert.alert("Error", "You must be logged in to add a product.");
 				return;
 			}
-			if (!name || !price || !description || !category) {
-				Alert.alert("Error", "Please fill in all fields.");
+
+		if (!name || !price || !description || !category || !location.trim()) {
+			Alert.alert("Error", "Please fill in all fields including location.");
 				return;
 			}
 			if (!imageFile) {
@@ -207,6 +253,33 @@ const SellerProducts: React.FC<SellerProductsProps> = ({ onClose }) => {
 					))}
 				</View>
 			)}
+
+			{/* Location Section - Required for shipping calculation */}
+			<View style={styles.locationSection}>
+				<Text style={styles.sectionTitle}>Product Location</Text>
+				<TextInput
+					style={styles.locationInput}
+					placeholder="Enter your location/city"
+					placeholderTextColor="#7CB798"
+					value={location}
+					onChangeText={setLocation}
+					editable={!isDetectingLocation}
+				/>
+				<TouchableOpacity
+					style={[styles.detectBtn, isDetectingLocation && styles.detectBtnDisabled]}
+					onPress={handleDetectLocation}
+					disabled={isDetectingLocation}
+				>
+					{isDetectingLocation ? (
+						<ActivityIndicator size="small" color="#fff" />
+					) : (
+						<>
+							<Ionicons name="locate" size={18} color="#fff" />
+							<Text style={styles.detectBtnText}>Detect Location</Text>
+						</>
+					)}
+				</TouchableOpacity>
+			</View>
 
 			{/* Upload Image */}
 			<Text style={styles.sectionTitle}>Upload Image</Text>
@@ -459,6 +532,41 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		marginVertical: 16,
 	},
+	locationSection: {
+        marginBottom: 16,
+        backgroundColor: "#fff",
+        borderRadius: 8,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: "#E7F3EC",
+    },
+    locationInput: {
+        backgroundColor: "#E7F3EC",
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 15,
+        color: "#222",
+        marginBottom: 10,
+    },
+    detectBtn: {
+        backgroundColor: "#27AE60",
+        borderRadius: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+	},
+	detectBtnDisabled: {
+        backgroundColor: "#A0D4B4",
+        opacity: 0.6,
+    },
+    detectBtnText: {
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 14,
+    },
 });
 
 export default SellerProducts;

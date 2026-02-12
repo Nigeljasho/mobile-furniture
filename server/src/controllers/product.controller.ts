@@ -3,7 +3,9 @@ import { Request, Response } from "express";
 import cloudinary from "../config/cloudinary";
 import Listing from "../models/listings.models";
 import Product from "../models/product.models";
+import User from "../models/user.models";
 import { logger } from "../utils/logger";
+import { geocodeCity } from "../utils/distanceUtils";
 
 export const addProduct = async (req: Request, res: Response) => {
 	const seller = req.user?.id;
@@ -69,6 +71,25 @@ export const addProduct = async (req: Request, res: Response) => {
 	}
 
 	try {
+		// Get seller's location for product creation
+		const sellerUser = await User.findById(seller);
+		let sellerLocation: any = {};
+
+		if (sellerUser?.location?.city) {
+			sellerLocation.city = sellerUser.location.city;
+			sellerLocation.latitude = sellerUser.location.latitude;
+			sellerLocation.longitude = sellerUser.location.longitude;
+
+			// If seller has city but no coordinates, geocode them
+			if (!sellerLocation.latitude || !sellerLocation.longitude) {
+				const coords = await geocodeCity(sellerUser.location.city);
+				if (coords) {
+					sellerLocation.latitude = coords.latitude;
+					sellerLocation.longitude = coords.longitude;
+				}
+			}
+		}
+
 		const newProduct = new Product({
 			seller: seller,
 			name,
@@ -77,6 +98,7 @@ export const addProduct = async (req: Request, res: Response) => {
 			description,
 			price: Number(price),
 			stock: Number(stock),
+			sellerLocation: Object.keys(sellerLocation).length > 0 ? sellerLocation : undefined,
 		});
 
 		await newProduct.save();

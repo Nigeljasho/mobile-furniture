@@ -1,8 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import Joi from "joi";
 
 import { logger } from "../utils/logger";
-import Product from "../models/product.models";
 
 export const validate = (schema: Joi.ObjectSchema) => {
 	return (req: Request, res: Response, next: NextFunction) => {
@@ -96,6 +95,12 @@ export const schemas = {
 		password: Joi.string().min(6).required(),
 		role: Joi.string().valid("buyer", "seller").default("buyer"),
 		profilePic: Joi.string().optional(),
+		location: Joi.object({
+			city: Joi.string().optional(),
+			address: Joi.string().optional(),
+			latitude: Joi.number().optional(),
+			longitude: Joi.number().optional(),
+		}).optional(),
 	}),
 	login: Joi.object({
 		email: Joi.string().email().required(),

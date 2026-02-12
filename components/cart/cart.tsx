@@ -1,16 +1,20 @@
-import { calculateRandomShipping } from "@/SERVICE/shippingUtils";
+import { api } from "@/SERVICE/api";
 import { useCartStore } from "@/stores/cartStore";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    FlatList,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
 
 export type CartItem = {
   id: string;
@@ -33,13 +37,13 @@ const Cart: React.FC<CartProps> = ({
 }) => {
   const { items, setQuantity, removeItem, subtotal } = useCartStore();
   const [shippingCost, setShippingCost] = useState(0);
+  const [buyerCity, setBuyerCity] = useState("");
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
 
-  // Recalculate shipping whenever cart items change
+  // Reset shipping when cart changes
   useEffect(() => {
-    const subtotalValue = subtotal();
-    const newShipping = calculateRandomShipping(subtotalValue);
-    setShippingCost(newShipping);
-  }, [items, subtotal]);
+    setShippingCost(0);
+  }, [items]);
 
   // Map store items -> UI CartItem shape
   const uiItems: CartItem[] = useMemo(() => {
@@ -66,6 +70,39 @@ const Cart: React.FC<CartProps> = ({
       );
     } else {
       setQuantity(id, nextQty);
+    }
+  };
+
+  const handleCalculateShipping = async () => {
+    if (!buyerCity.trim()) {
+      Alert.alert("Error", "Please enter a delivery city");
+      return;
+    }
+
+    setIsCalculatingShipping(true);
+    try {
+      let totalShipping = 0;
+
+      // Calculate shipping for each unique seller
+      for (const item of items) {
+        const productId = item.product.id;
+        
+        // Call backend to calculate shipping
+        const response = await api.post("/order/calculate-shipping", {
+          productId,
+          buyerCity: buyerCity.trim(),
+        });
+
+        const shippingFee = response.data?.fee || 0;
+        totalShipping += shippingFee;
+      }
+
+      setShippingCost(totalShipping);
+    } catch (error) {
+      Alert.alert("Error", "Failed to calculate shipping. Please try again.");
+      console.error("Shipping calculation error:", error);
+    } finally {
+      setIsCalculatingShipping(false);
     }
   };
 
@@ -136,31 +173,61 @@ const Cart: React.FC<CartProps> = ({
               scrollEnabled={false}
             />
 
-            {/* Summary */}
-            <Text style={styles.summaryTitle}>Summary</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>Ksh {subtotalValue}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Shipping</Text>
-              <Text style={styles.summaryValue}>Ksh {shippingCost}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total</Text>
-              <Text style={styles.summaryValue}>Ksh {total}</Text>
+            {/* City Input & Calculate Button */}
+            <View style={styles.cityInputContainer}>
+              <TextInput
+                style={styles.cityInput}
+                placeholder="Enter delivery city (e.g., Kisumu)"
+                placeholderTextColor="#7CB798"
+                value={buyerCity}
+                onChangeText={setBuyerCity}
+              />
+              <TouchableOpacity
+                style={[styles.calculateBtn, isCalculatingShipping && styles.calculateBtnDisabled]}
+                onPress={handleCalculateShipping}
+                disabled={isCalculatingShipping || !buyerCity.trim()}
+              >
+                {isCalculatingShipping ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.calculateBtnText}>Calculate</Text>
+                )}
+              </TouchableOpacity>
             </View>
 
-            {/* Checkout Button */}
-            <TouchableOpacity style={styles.checkoutBtn} onPress={onCheckout}>
-              <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
-            </TouchableOpacity>
+            {/* Summary - ONLY SHOWS AFTER CALCULATING */}
+            {shippingCost > 0 && (
+              <>
+                <Text style={styles.summaryTitle}>Summary</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Subtotal</Text>
+                  <Text style={styles.summaryValue}>Ksh {subtotalValue}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Shipping</Text>
+                  <Text style={styles.summaryValue}>Ksh {shippingCost}</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.totalRow]}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>Ksh {total}</Text>
+                </View>
+
+                {/* Checkout Button */}
+                <TouchableOpacity style={styles.checkoutBtn} onPress={onCheckout}>
+                
+  
+                  <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </>
         )}
       </ScrollView>
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FCF9" },
@@ -237,6 +304,44 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   checkoutBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  cityInputContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+    marginTop: 16,
+  },
+  cityInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#7CB798",
+    padding: 8,
+    fontSize: 14,
+    backgroundColor: "#fff",
+  },
+  calculateBtn: {
+    backgroundColor: "#27AE60",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+    marginLeft: 8,
+  },
+  calculateBtnDisabled: {
+    backgroundColor: "#A0D4B4",
+    opacity: 0.6,
+  },
+  calculateBtnText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
+  totalRow: {
+    borderTopWidth: 1,
+    borderTopColor: "#E7F3EC",
+    paddingTop: 8,
+    marginTop: 8,
+  },
+  totalLabel: { color: "#222", fontSize: 16, fontWeight: "bold" },
+  totalValue: { fontSize: 16, fontWeight: "bold", color: "#27AE60" },
 });
 
 export default Cart;

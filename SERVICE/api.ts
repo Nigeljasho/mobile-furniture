@@ -160,18 +160,33 @@ export const getProductListing = async (sellerId: string) => {
   }
 };
 
-export const addTocart = async (payload: {
+export const addToCart = async (payload: {
   productId: string;
   quantity: number;
+
 }) => {
   try {
+    const cartPayload = {
+          productId: payload.productId,
+          quantity: payload.quantity,
+        
+    };
+
+  console.log("✅ Using test-proven payload:", JSON.stringify(cartPayload, null, 2));
     // Backend extracts userId from JWT token (req.user.id)
-    const response = await api.post("/cart/", payload);
+    const response = await api.post("/cart/", cartPayload);
     return response.data;
   } catch (err) {
     console.error("Failed to add product to cart", err);
     if (axios.isAxiosError(err)) {
-      throw new Error(err.response?.data?.message || "Failed to add to cart");
+      const errorData = err.response?.data as any;
+      const errorMessage = errorData?.details || errorData?.message || "Failed to add to cart";
+      console.error("Cart API Error Details:", {
+        status: err.response?.status,
+        message: errorMessage,
+        fullResponse: errorData,
+      });
+      throw new Error(errorMessage);
     }
     throw err;
   }
@@ -350,6 +365,49 @@ export const updateProductWithImage = async (
     if (axios.isAxiosError(err)) {
       throw new Error(
         err.response?.data?.message || "Failed to update product",
+      );
+    }
+    throw err;
+  }
+};
+/**
+ * Update seller's location (for shipping calculation)
+ */
+export const updateSellerLocation = async (locationData: {
+  city: string;
+  address: string;
+  latitude?: number;
+  longitude?: number;
+}) => {
+  try {
+    const response = await api.patch("/users/location", locationData);
+    return response.data;
+  } catch (err) {
+    console.error("Failed to update seller location:", err);
+    if (axios.isAxiosError(err)) {
+      throw new Error(
+        err.response?.data?.message || "Failed to update location",
+      );
+    }
+    throw err;
+  }
+};
+
+/**
+ * Calculate shipping cost based on product and buyer's delivery city
+ */
+export const calculateShipping = async (productId: string, buyerCity: string) => {
+  try {
+    const response = await api.post("/order/calculate-shipping", {
+      productId,
+      buyerCity,
+    });
+    return response.data;
+  } catch (err) {
+    console.error("Failed to calculate shipping:", err);
+    if (axios.isAxiosError(err)) {
+      throw new Error(
+        err.response?.data?.message || "Failed to calculate shipping",
       );
     }
     throw err;

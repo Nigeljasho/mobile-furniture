@@ -34,6 +34,25 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    // Location fields for sellers
+    location: {
+      city: {
+        type: String,
+        required: false,
+      },
+      address: {
+        type: String,
+        required: false,
+      },
+      latitude: {
+        type: Number,
+        required: false,
+      },
+      longitude: {
+        type: Number,
+        required: false,
+      },
+    },
   },
   { timestamps: true },
 );

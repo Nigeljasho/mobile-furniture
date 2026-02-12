@@ -10,6 +10,12 @@ export interface RegisterInput {
 	email: string;
 	password: string;
 	role: "buyer" | "seller";
+	location?: {
+		city?: string;
+		address?: string;
+		latitude?: number;
+		longitude?: number;
+	};
 }
 
 export interface Product {
