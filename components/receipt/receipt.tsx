@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from "expo-print";
 import React from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 type CartItem = {
@@ -32,6 +33,59 @@ const Receipt: React.FC<ReceiptProps> = ({
   paymentMethod,
   onBackHome,
 }) => {
+  const handlePrint = async () => {
+    try {
+      const html = `
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <title>Receipt</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #222; padding: 24px; }
+              h1 { font-size: 20px; margin: 0 0 8px; }
+              h2 { font-size: 16px; margin: 16px 0 8px; }
+              .muted { color: #666; font-size: 12px; }
+              .row { display: flex; justify-content: space-between; margin: 4px 0; }
+              .item { border-bottom: 1px solid #eee; padding: 8px 0; }
+              .item-name { font-weight: 600; }
+            </style>
+          </head>
+          <body>
+            <h1>Order Confirmation</h1>
+            <div class="muted">Order #${orderNumber}</div>
+            <h2>Order Summary</h2>
+            ${items
+              .map(
+                (item) => `
+                  <div class="item">
+                    <div class="item-name">${item.name}</div>
+                    <div class="muted">Qty: ${item.quantity}</div>
+                  </div>
+                `,
+              )
+              .join("")}
+            <div class="row"><span>Subtotal</span><strong>Ksh ${subtotal}</strong></div>
+            <div class="row"><span>Shipping</span><strong>Ksh ${shipping}</strong></div>
+            <div class="row"><span>Total</span><strong>Ksh ${total}</strong></div>
+            <h2>Order Details</h2>
+            <div class="row"><span>Estimated Delivery</span><strong>${deliveryDate}</strong></div>
+            <div class="row"><span>Payment Method</span><strong>${paymentMethod}</strong></div>
+          </body>
+        </html>
+      `;
+
+      if (Platform.OS === "web" && typeof window !== "undefined" && window.print) {
+        window.print();
+        return;
+      }
+
+      await Print.printAsync({ html });
+    } catch (err) {
+      Alert.alert("Print Failed", "Unable to print the receipt on this device.");
+      console.error("Print error:", err);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -71,13 +125,7 @@ const Receipt: React.FC<ReceiptProps> = ({
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.printBtn}
-            onPress={() => {
-              if (typeof window !== 'undefined' && window.print) {
-                window.print();
-              } else {
-                Alert.alert('Print', 'Printing is only supported on web browsers.');
-              }
-            }}
+            onPress={handlePrint}
           >
             <Text style={styles.printBtnText}>Print Receipt</Text>
           </TouchableOpacity>

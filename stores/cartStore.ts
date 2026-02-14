@@ -16,12 +16,16 @@ type CartState = {
 	isLoading: boolean;
 	error: string | null;
 	userId: string | null;
+	buyerCity: string;
+	shippingCost: number;
 
 	// basic ops
 	addItem: (product: Product, qty?: number) => Promise<void>;
 	setQuantity: (productId: string, qty: number) => void;
 	removeItem: (productId: string) => Promise<void>;
 	clear: () => void;
+	setBuyerCity: (city: string) => void;
+	setShippingCost: (cost: number) => void;
 
 	// server sync
 	fetchCart: () => Promise<void>;
@@ -57,6 +61,8 @@ export const useCartStore = create<CartState>()(
 			isLoading: false,
 			error: null,
 			userId: null,
+			buyerCity: "",
+			shippingCost: 0,
 
 			addItem: async (product, qty = 1) => {
 				if (typeof addToCart !== 'function') {
@@ -145,6 +151,13 @@ export const useCartStore = create<CartState>()(
 				console.log("🗑️ Cart cleared");
 			},
 
+			setBuyerCity: (city: string) => {
+				set({ buyerCity: city });
+			},
+			setShippingCost: (cost: number) => {
+				set({ shippingCost: cost });
+			},
+
 			fetchCart: async () => {
 				try {
 					set({ isLoading: true, error: null });
@@ -176,7 +189,12 @@ export const useCartStore = create<CartState>()(
 		{
 			name: "cart_store",
 			storage: createJSONStorage(() => AsyncStorage),
-			partialize: (s) => ({ items: s.items, userId: s.userId }),
+			partialize: (s) => ({
+				items: s.items,
+				userId: s.userId,
+				buyerCity: s.buyerCity,
+				shippingCost: s.shippingCost,
+			}),
 			version: 1,
 		}
 	)

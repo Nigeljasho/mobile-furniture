@@ -3,6 +3,12 @@ export interface User {
 	fullName: string;
 	email: string;
 	role: "buyer" | "seller";
+	location?: {
+		city?: string;
+		address?: string;
+		latitude?: number;
+		longitude?: number;
+	};
 }
 
 export interface RegisterInput {
@@ -51,7 +57,7 @@ export interface Cart {
 export interface Order {
 	id: string;
 	_id?: string;
-	buyer?: Buyer; 
+	buyer?: Buyer | string; 
 	user?: string;  
 	seller?: string;
 	orderNumber?: string;  
@@ -135,7 +141,7 @@ export interface Review {
 	createdAt?: string;
 	updatedAt?: string;
 }
-interface Buyer {
+export interface Buyer {
 	_id: string;
 	name?: string;
 	email?: string;

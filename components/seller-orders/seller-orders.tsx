@@ -1,8 +1,9 @@
 import { useAuthStore } from "@/stores/authStore";
 import { useOrderStore } from "@/stores/orderStore";
-import { Order } from "@/types";
+import { Buyer, Order } from "@/types";
+import { getUserProfile } from "@/SERVICE/api";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -24,12 +25,66 @@ const SellerOrders: React.FC<SellerOrdersProps> = ({
 }) => {
 	const { user } = useAuthStore();
 	const { orders, isLoading, error, fetchOrders } = useOrderStore();
+	const [buyerNamesById, setBuyerNamesById] = useState<Record<string, string>>(
+		{},
+	);
 
 	useEffect(() => {
 		if (user?.id) {
 			fetchOrders(user.id, "seller");
 		}
 	}, [user?.id, fetchOrders]);
+
+	useEffect(() => {
+		const loadBuyerNames = async () => {
+			const buyerIds = Array.from(
+				new Set(
+					orders
+						.map((order) => {
+							const buyer = order.buyer as
+								| string
+								| (Buyer & { fullName?: string })
+								| undefined;
+
+							if (!buyer) return "";
+							if (typeof buyer === "string") return buyer.trim();
+							if (buyer._id) return buyer._id;
+							return "";
+						})
+						.filter((id) => /^[a-f\d]{24}$/i.test(id) && !buyerNamesById[id]),
+				),
+			);
+
+			if (buyerIds.length === 0) return;
+
+			try {
+				const profiles = await Promise.all(
+					buyerIds.map(async (id) => {
+						try {
+							const profile = await getUserProfile(id);
+							return { id, name: profile?.fullName || profile?.email || "" };
+						} catch {
+							return { id, name: "" };
+						}
+					}),
+				);
+
+				setBuyerNamesById((prev) => {
+					const next = { ...prev };
+					for (const profile of profiles) {
+						if (profile.name) {
+							next[profile.id] = profile.name;
+						}
+					}
+					return next;
+				});
+			} catch {
+				// Ignore lookup failures; fallback text will be shown.
+			}
+		};
+
+		void loadBuyerNames();
+	}, [orders, buyerNamesById]);
 
 	const handleRefresh = () => {
 		if (user?.id) {
@@ -77,9 +132,25 @@ const SellerOrders: React.FC<SellerOrdersProps> = ({
 	// Add this helper function at the top of your component
 	const getBuyerDisplay = (buyer: string | Buyer | undefined): string => {
 		if (!buyer) return "N/A";
-		if (typeof buyer === "string") return buyer;
-		if (typeof buyer === "object" && buyer._id) return buyer._id;
-		return "N/A";
+		if (typeof buyer === "string") {
+			// Avoid rendering raw Mongo ObjectId as the customer name.
+			const trimmedBuyer = buyer.trim();
+			const isObjectId = /^[a-f\d]{24}$/i.test(trimmedBuyer);
+			if (isObjectId) return buyerNamesById[trimmedBuyer] || "Unknown customer";
+			return trimmedBuyer;
+		}
+		if (typeof buyer === "object") {
+			const fullName = (buyer as Buyer & { fullName?: string }).fullName;
+			const buyerId = buyer._id?.trim();
+			return (
+				buyer.name ||
+				fullName ||
+				buyer.email ||
+				(buyerId ? buyerNamesById[buyerId] : "") ||
+				"Unknown customer"
+			);
+		}
+		return "Unknown customer";
 	};
 
 	const renderOrderItem = ({ item: order }: { item: Order }) => (
@@ -112,6 +183,7 @@ const SellerOrders: React.FC<SellerOrdersProps> = ({
 
 			<View style={styles.orderDetails}>
 				<Text style={styles.orderSummary}>
+					{/* show the items and name of the buyer */}
 					{order.items?.length || 0} item(s) • Customer:{" "}
 					{getBuyerDisplay(order.buyer)}
 				</Text>
@@ -129,8 +201,11 @@ const SellerOrders: React.FC<SellerOrdersProps> = ({
 					{order.shippingInfo?.city || "No address"}
 				</Text>
 			</View>
+			<Text style={styles.buyerPhone}>
+				Buyer Phone: {order.phoneNumber || "N/A"}
+			</Text>
 
-		 
+		
 			<OrderStatusButtons
 				order={order}
 				userRole="seller"
@@ -295,6 +370,11 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: "#666",
 		fontStyle: "italic",
+	},
+	buyerPhone: {
+		fontSize: 12,
+		color: "#666",
+		marginBottom: 12,
 	},
 	loadingText: {
 		color: "#7CB798",

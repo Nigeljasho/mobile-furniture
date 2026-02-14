@@ -359,16 +359,32 @@ export const getSellersOrders = async (req: Request, res: Response) => {
   try {
     const orders = await Order.find({ seller: sellerId })
       .populate("items.product", "name images")
-      .populate("buyer", "_id") // populate buyer so we can return buyer id reliably
+      .populate("buyer", "_id fullName email") // include buyer details for seller UI
       .sort({ createdAt: -1 });
 
     const out = orders.map((o) => {
       const obj = o.toObject();
+      const populatedBuyer = obj.buyer as
+        | { _id?: unknown; fullName?: string; name?: string; email?: string }
+        | string
+        | null
+        | undefined;
+
       const buyerId =
-        obj.buyer && typeof obj.buyer === "object"
-          ? (obj.buyer._id ?? obj.buyer)
-          : obj.buyer;
-      return { ...obj, buyerId, seller: undefined };
+        populatedBuyer && typeof populatedBuyer === "object"
+          ? String(populatedBuyer._id ?? "")
+          : String(populatedBuyer ?? "");
+
+      const buyer =
+        populatedBuyer && typeof populatedBuyer === "object"
+          ? {
+              _id: String(populatedBuyer._id ?? ""),
+              name: populatedBuyer.fullName ?? populatedBuyer.name ?? "",
+              email: populatedBuyer.email ?? "",
+            }
+          : populatedBuyer;
+
+      return { ...obj, buyer, buyerId, seller: undefined };
     });
 
     return res.status(200).json({ success: true, orders: out });

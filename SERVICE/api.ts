@@ -71,7 +71,7 @@ export const getUserProfile = async (id: string) => {
     fullName: data.fullName,
     email: data.email,
     role: data.role,
-    // add other fields if needed
+    location: data.location,
   };
 };
 

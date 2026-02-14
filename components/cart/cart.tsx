@@ -35,15 +35,22 @@ const Cart: React.FC<CartProps> = ({
   onCheckout,
   onUpdateQuantity,
 }) => {
-  const { items, setQuantity, removeItem, subtotal } = useCartStore();
-  const [shippingCost, setShippingCost] = useState(0);
-  const [buyerCity, setBuyerCity] = useState("");
+  const {
+    items,
+    setQuantity,
+    removeItem,
+    subtotal,
+    buyerCity,
+    setBuyerCity,
+    shippingCost,
+    setShippingCost,
+  } = useCartStore();
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
 
   // Reset shipping when cart changes
   useEffect(() => {
     setShippingCost(0);
-  }, [items]);
+  }, [items, setShippingCost]);
 
   // Map store items -> UI CartItem shape
   const uiItems: CartItem[] = useMemo(() => {

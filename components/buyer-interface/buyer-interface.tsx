@@ -35,6 +35,8 @@ const BuyerInterface = () => {
     addItem,
     removeItem,
     subtotal: getSubtotal,
+    shippingCost,
+    setShippingCost,
   } = useCartStore();
   const { currentOrder } = useOrderStore();
   const insets = useSafeAreaInsets();
@@ -55,7 +57,6 @@ const BuyerInterface = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [shippingCost, setShippingCost] = useState(0);
 
   useEffect(() => {
     fetchProducts();
@@ -66,7 +67,7 @@ const BuyerInterface = () => {
     const subtotal = getSubtotal();
     const newShipping = calculateShipping(subtotal);
     setShippingCost(newShipping);
-  }, [cartItems]);
+  }, [cartItems, getSubtotal, setShippingCost]);
 
   const handleImagePress = (imageUrl: string, productId: string) => {
     setSelectedImage(imageUrl);
@@ -248,9 +249,13 @@ const BuyerInterface = () => {
   let filteredProducts = products.filter((p) => {
     let priceValue = p.price || 0;
     let priceMatch = true;
-    if (priceFilter === "1000 to 10000")
-      priceMatch = priceValue >= 1000 && priceValue <= 10000;
-    else if (priceFilter === "10000+") priceMatch = priceValue > 10000;
+    if (priceFilter === "0 to 999")
+      priceMatch = priceValue >= 0 && priceValue <= 999;
+    else if (priceFilter === "1000 to 20000")
+      priceMatch = priceValue >= 1000 && priceValue <= 20000;
+    else if (priceFilter === "20001 to 29999")
+      priceMatch = priceValue >= 20001 && priceValue <= 29999;
+    else if (priceFilter === "30000+") priceMatch = priceValue >= 30000;
 
     const categoryMatch =
       !categoryFilter ||
@@ -275,12 +280,13 @@ const BuyerInterface = () => {
       };
       selected = categoryFilter || "All";
     } else if (openDropdown === "price") {
-      options = ["1000 to 10000", "10000+"];
+      options = ["All", "0 to 999", "1000 to 20000", "20001 to 29999", "30000+"];
       onSelect = (option) => {
-        setPriceFilter(option);
+        if (option === "All") setPriceFilter(null);
+        else setPriceFilter(option);
         setOpenDropdown(null);
       };
-      selected = priceFilter || "";
+      selected = priceFilter || "All";
     }
     return (
       <Pressable

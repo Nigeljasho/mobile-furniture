@@ -3,8 +3,8 @@ import { useOrderStore } from "@/stores/orderStore"; // ✅ Add import
 import { useProductStore } from "@/stores/productStore";
 import { useReviewStore } from "@/stores/reviewStore";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import SellerOrders from "../seller-orders/seller-orders";
 import SellerManageListing from "../sellerManageListing/SellerManageListing";
 import SellerProducts from "../sellerproducts/upload";
@@ -21,6 +21,7 @@ const SellerInterface: React.FC<SellerInterfaceProps> = ({ onBack }) => {
 	const [showProfile, setShowProfile] = useState(false);
 	const [showReviews, setShowReviews] = useState(false);
 	const [showOrders, setShowOrders] = useState(false);  
+	const hasShownMissingSellerAlert = useRef(false);
 
 	const { getProfile, user, token } = useAuthStore();
 	const { fetchSellersListings, products } = useProductStore();
@@ -28,6 +29,12 @@ const SellerInterface: React.FC<SellerInterfaceProps> = ({ onBack }) => {
 	const { orders, fetchOrders } = useOrderStore(); 
 
 	const id = user?.id;
+
+	const showMissingSellerAlert = () => {
+		if (hasShownMissingSellerAlert.current) return;
+		hasShownMissingSellerAlert.current = true;
+		Alert.alert("Logged Out", "You are logged out.");
+	};
 
 	useEffect(() => {
 		if (!token) return;
@@ -49,7 +56,7 @@ const SellerInterface: React.FC<SellerInterfaceProps> = ({ onBack }) => {
 			fetchSellersListings(id);
 			fetchOrders(id, "seller"); 
 		} else {
-			console.error("No seller ID found - user might not be logged in");
+			showMissingSellerAlert();
 		}
 	}, [id, fetchSellersListings, fetchOrders]);
 
@@ -57,7 +64,7 @@ const SellerInterface: React.FC<SellerInterfaceProps> = ({ onBack }) => {
 		if (id) {
 			fetchReviews(id);
 		} else {
-			console.error("No seller ID found - user might not be logged in");
+			showMissingSellerAlert();
 		}
 	}, [id, fetchReviews]);
 

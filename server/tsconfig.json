@@ -6,7 +6,6 @@
 		"target": "ES2022",
 		"module": "CommonJS",
 		"moduleResolution": "node",
-		"ignoreDeprecations": "6.0",
 		"lib": ["esnext"],
 		"types": ["node"],
 

@@ -99,10 +99,25 @@ export const useOrderStore = create<OrderState>()(
             _id: order._id || order.id,
             orderNumber: order.orderNumber,
 
-            buyer:
-              typeof order.buyer === "object" && order.buyer?._id
-                ? order.buyer._id
-                : order.buyer,
+            buyer: (() => {
+              if (typeof order.buyer === "string") return order.buyer;
+              if (order.buyer && typeof order.buyer === "object") {
+                const buyerId =
+                  order.buyer._id || order.buyer.id || order.buyer.buyerId;
+                const buyerName = order.buyer.name || order.buyer.fullName;
+                const buyerEmail = order.buyer.email;
+
+                // If we only have an id-like object, keep it as string so UI fallback can handle it.
+                if (!buyerName && !buyerEmail && buyerId) return String(buyerId);
+
+                return {
+                  _id: buyerId || "",
+                  name: buyerName,
+                  email: buyerEmail,
+                };
+              }
+              return order.buyer;
+            })(),
             seller:
               typeof order.seller === "object" && order.seller?._id
                 ? order.seller._id
@@ -113,6 +128,7 @@ export const useOrderStore = create<OrderState>()(
             total: order.total,
             paymentMethod: order.paymentMethod,
             paymentStatus: order.paymentStatus,
+            phoneNumber: order.phoneNumber,
             status: order.status,
             shippingInfo: order.shippingInfo,
             mpesaReceiptNumber: order.mpesaReceiptNumber,

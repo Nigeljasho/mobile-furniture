@@ -1,7 +1,4 @@
 import { api } from "@/SERVICE/api";
-import { useRoute } from "@react-navigation/native";
-
-
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrderStore } from "@/stores/orderStore";
@@ -49,13 +46,17 @@ const Checkout: React.FC<CheckoutProps> = ({
   onConfirmPayment,
 }) => {
   const { user } = useAuthStore();
-  const { items: cartItems, clear: clearCart } = useCartStore();
+  const {
+    items: cartItems,
+    clear: clearCart,
+    buyerCity,
+    shippingCost,
+  } = useCartStore();
   const { createOrder, isLoading } = useOrderStore();
   const { fetchProducts } = useProductStore();
 
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(user?.email || "");
   const [mpesaPhone, setMpesaPhone] = useState("");
@@ -75,7 +76,7 @@ const Checkout: React.FC<CheckoutProps> = ({
       Alert.alert("Validation Error", "Please enter your address");
       return;
     }
-    if (!city.trim()) {
+    if (!buyerCity.trim()) {
       Alert.alert("Validation Error", "Please enter your city");
       return;
     }
@@ -124,7 +125,7 @@ const Checkout: React.FC<CheckoutProps> = ({
         phoneNumber: formattedPhone,
         paymentMethod: "mpesa",
         shippingInfo: {
-          city: city.trim(),
+          city: buyerCity.trim(),
           address: address.trim(),
         },
       };
@@ -146,7 +147,7 @@ const Checkout: React.FC<CheckoutProps> = ({
           shippingDetails: {
             fullName,
             address,
-            city,
+            city: buyerCity,
             phone,
             email,
             mpesaPhone: formattedPhone,
@@ -282,7 +283,7 @@ const Checkout: React.FC<CheckoutProps> = ({
         <View style={styles.summaryRow}>
           {/* shipping from cart */}
           <Text style={styles.summaryLabel}>Shipping</Text>
-          <Text style={styles.summaryValue}>KES {shipping}</Text>
+          <Text style={styles.summaryValue}>KES {shippingCost}</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Total</Text>
@@ -308,9 +309,8 @@ const Checkout: React.FC<CheckoutProps> = ({
         <TextInput
           style={styles.input}
           placeholder="Enter your city"
-          value={city}
-          onChangeText={setCity}
-          editable={!isLoading}
+          value={buyerCity}
+          editable={false}
         />
         <TextInput
           style={styles.input}

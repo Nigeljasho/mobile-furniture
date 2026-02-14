@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: furniture-backend
+    env: node
+    rootDir: server
+    plan: free
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: API_VERSION
+        value: v1
+      - key: BASE_URL
+        value: https://furniture-backend.onrender.com
+      - key: MONGOURL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUD_NAME
+        sync: false
+      - key: CLOUD_API_KEY
+        sync: false
+      - key: CLOUD_SECRET_KEY
+        sync: false
+      - key: BUSINESS_SHORT_CODE
+        sync: false
+      - key: CONSUMER_KEY
+        sync: false
+      - key: CONSUMER_SECRET
+        sync: false
+      - key: PASS_KEY
+        sync: false
+      - key: TEST_MODE
+        value: "false"
+
+  - type: web
+    name: furniture-admin
+    env: static
+    rootDir: admin-panel
+    plan: free
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://furniture-backend.onrender.com/api/v1/admin
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

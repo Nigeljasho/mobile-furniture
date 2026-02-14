@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import {
 	Alert,
 	Image,
-	Modal,
 	Platform,
 	ScrollView,
 	StyleSheet,
@@ -16,13 +15,6 @@ import {
 	View,
 } from "react-native";
 import OrderHistory from "../order-history/order-history";
-
-type Address = { id: string; name: string; location: string };
-
-const initialAddresses = [
-	{ id: "1", name: "Home", location: "Nairobi, Kenya" },
-	{ id: "2", name: "Office", location: "Mombasa, Kenya" },
-];
 
 const LogoutButton: React.FC<{ onLoggedOut?: () => void }> = ({
 	onLoggedOut,
@@ -54,18 +46,6 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [phone, setPhone] = useState("");
-	const [addresses, setAddresses] = useState(initialAddresses);
-	const [addressModal, setAddressModal] = useState<{
-		visible: boolean;
-		address: Address | null;
-	}>({ visible: false, address: null });
-	const [editAddress, setEditAddress] = useState({
-		id: "",
-		name: "",
-		location: "",
-	});
-	const [addAddressModal, setAddAddressModal] = useState(false);
-	const [newAddress, setNewAddress] = useState({ name: "", location: "" });
 	const [showOrderHistory, setShowOrderHistory] = useState(false); 
 	const id = user?.id;
 
@@ -108,46 +88,6 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
 		if (!result.canceled && result.assets && result.assets[0].uri) {
 			setProfileImage(result.assets[0].uri);
 		}
-	};
-
-	// Edit address functions remain the same...
-	const openEditAddress = (address: Address) => {
-		setEditAddress(address);
-		setAddressModal({ visible: true, address });
-	};
-
-	const saveEditAddress = () => {
-		setAddresses((prev) =>
-			prev.map((a) => (a.id === editAddress.id ? { ...editAddress } : a))
-		);
-		setAddressModal({ visible: false, address: null });
-	};
-
-	const deleteAddress = (id: string) => {
-		Alert.alert(
-			"Delete Address",
-			"Are you sure you want to delete this address?",
-			[
-				{ text: "Cancel", style: "cancel" },
-				{
-					text: "Delete",
-					style: "destructive",
-					onPress: () =>
-						setAddresses((prev) => prev.filter((a) => a.id !== id)),
-				},
-			]
-		);
-		setAddressModal({ visible: false, address: null });
-	};
-
-	const saveNewAddress = () => {
-		if (!newAddress.name || !newAddress.location) return;
-		setAddresses((prev) => [
-			...prev,
-			{ id: Date.now().toString(), ...newAddress },
-		]);
-		setNewAddress({ name: "", location: "" });
-		setAddAddressModal(false);
 	};
 
 	const saveProfile = () => {
@@ -215,34 +155,6 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
 					keyboardType="phone-pad"
 				/>
 
-				<Text style={styles.sectionTitle}>Shipping Addresses</Text>
-				{addresses.map((addr) => (
-					<TouchableOpacity
-						key={addr.id}
-						style={styles.addressRow}
-						onPress={() => openEditAddress(addr)}
-					>
-						<View style={styles.addressIcon}>
-							<Ionicons name="home-outline" size={20} color="#7CB798" />
-						</View>
-						<View style={{ flex: 1 }}>
-							<Text style={styles.addressName}>{addr.name}</Text>
-							<Text style={styles.addressLocation}>{addr.location}</Text>
-						</View>
-						<Feather name="chevron-right" size={20} color="#222" />
-					</TouchableOpacity>
-				))}
-				<TouchableOpacity
-					style={styles.addressRow}
-					onPress={() => setAddAddressModal(true)}
-				>
-					<View style={styles.addressIcon}>
-						<Ionicons name="add" size={20} color="#7CB798" />
-					</View>
-					<Text style={styles.addAddressText}>Add New Address</Text>
-					<Feather name="chevron-right" size={20} color="#222" />
-				</TouchableOpacity>
-
 				<Text style={styles.sectionTitle}>Order History</Text>
 				{/*Update this to use real order history */}
 				<TouchableOpacity
@@ -263,84 +175,8 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
 				</View>
 
 				<View style={{ flex: 1 }} />
-				<LogoutButton onLoggedOut={onBack} />
+			<LogoutButton onLoggedOut={onBack} />
 			</ScrollView>
-
-			{/* Keep all existing modals... */}
-			{/* Edit Address Modal */}
-			<Modal visible={addressModal.visible} transparent animationType="slide">
-				<View style={styles.modalOverlay}>
-					<View style={styles.modalContent}>
-						<Text style={styles.modalTitle}>Edit Address</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Name"
-							value={editAddress.name}
-							onChangeText={(v) => setEditAddress((e) => ({ ...e, name: v }))}
-						/>
-						<TextInput
-							style={styles.input}
-							placeholder="Location"
-							value={editAddress.location}
-							onChangeText={(v) =>
-								setEditAddress((e) => ({ ...e, location: v }))
-							}
-						/>
-						<View style={styles.modalBtnRow}>
-							<TouchableOpacity
-								style={styles.modalBtn}
-								onPress={saveEditAddress}
-							>
-								<Text style={styles.modalBtnText}>Save</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.modalBtn, { backgroundColor: "#F66" }]}
-								onPress={() => deleteAddress(editAddress.id)}
-							>
-								<Text style={styles.modalBtnText}>Delete</Text>
-							</TouchableOpacity>
-						</View>
-						<TouchableOpacity
-							style={styles.modalClose}
-							onPress={() => setAddressModal({ visible: false, address: null })}
-						>
-							<Text style={styles.modalCloseText}>Cancel</Text>
-						</TouchableOpacity>
-					</View>
-				</View>
-			</Modal>
-
-			{/* Add Address Modal */}
-			<Modal visible={addAddressModal} transparent animationType="slide">
-				<View style={styles.modalOverlay}>
-					<View style={styles.modalContent}>
-						<Text style={styles.modalTitle}>Add New Address</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Name"
-							value={newAddress.name}
-							onChangeText={(v) => setNewAddress((e) => ({ ...e, name: v }))}
-						/>
-						<TextInput
-							style={styles.input}
-							placeholder="Location"
-							value={newAddress.location}
-							onChangeText={(v) =>
-								setNewAddress((e) => ({ ...e, location: v }))
-							}
-						/>
-						<TouchableOpacity style={styles.modalBtn} onPress={saveNewAddress}>
-							<Text style={styles.modalBtnText}>Save</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							style={styles.modalClose}
-							onPress={() => setAddAddressModal(false)}
-						>
-							<Text style={styles.modalCloseText}>Cancel</Text>
-						</TouchableOpacity>
-					</View>
-				</View>
-			</Modal>
 		</View>
 	);
 };
@@ -423,34 +259,6 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		fontSize: 15,
 	},
-	addressRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#F8FCF9",
-		borderRadius: 10,
-		padding: 10,
-		marginBottom: 8,
-	},
-	addressIcon: {
-		marginRight: 10,
-		backgroundColor: "#E7F3EC",
-		borderRadius: 8,
-		padding: 6,
-	},
-	addressName: {
-		fontWeight: "bold",
-		fontSize: 15,
-	},
-	addressLocation: {
-		color: "#7CB798",
-		fontSize: 13,
-	},
-	addAddressText: {
-		color: "#7CB798",
-		fontWeight: "bold",
-		fontSize: 15,
-		flex: 1,
-	},
 	orderHistoryRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -481,69 +289,25 @@ const styles = StyleSheet.create({
 	saveBtnText: {
 		color: "#fff",
 		fontWeight: "bold",
-		fontSize: 16,
+		fontSize: 18,
 		textAlign: "center",
-	},
-	modalOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0,0,0,0.15)",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	modalContent: {
-		backgroundColor: "#fff",
-		borderRadius: 14,
-		padding: 18,
-		width: 320,
-		maxWidth: "90%",
-		alignItems: "stretch",
-	},
-	modalTitle: {
-		fontWeight: "bold",
-		fontSize: 16,
-		marginBottom: 12,
-		alignSelf: "center",
-	},
-	modalBtnRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		marginTop: 10,
-	},
-	modalBtn: {
-		backgroundColor: "#7CB798",
-		borderRadius: 8,
-		paddingVertical: 10,
-		paddingHorizontal: 22,
-		marginHorizontal: 4,
-	},
-	modalBtnText: {
-		color: "#fff",
-		fontWeight: "bold",
-		fontSize: 15,
-		textAlign: "center",
-	},
-	modalClose: {
-		marginTop: 16,
-		alignSelf: "center",
-	},
-	modalCloseText: {
-		color: "#7CB798",
-		fontWeight: "bold",
-		fontSize: 15,
 	},
 });
 
 const logoutStyles = StyleSheet.create({
 	logoutContainer: {
-		alignItems: "flex-start",
-		marginLeft: 18,
+		width: "100%",
+		justifyContent: "center",
+		paddingHorizontal: 18,
 		marginBottom: 32,
 	},
 	logoutButton: {
+		width: "100%",
+		alignItems: "center",
 		backgroundColor: "#e74c3c",
 		paddingVertical: 8,
 		paddingHorizontal: 24,
-		borderRadius: 18,
+		borderRadius: 5,
 		elevation: 2,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },

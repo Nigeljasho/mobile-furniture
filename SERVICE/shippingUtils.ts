@@ -1,7 +1,5 @@
 /**
- * Calculate shipping cost based on distance
- * This matches the backend calculation logic
- * 
+  * Shipping cost calculation based on distance.
  * Pricing breakdown (by distance):
  * - 0-10 km: 500 KES
  * - 11-25 km: 800 KES

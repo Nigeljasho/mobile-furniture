@@ -78,7 +78,7 @@ const PORT = process.env.PORT || 3000;
 
 connectDB()
   .then(() => {
-    app.listen(3000, "0.0.0.0", () => {
+    app.listen(Number(PORT), "0.0.0.0", () => {
       logger.info(`Server is running on port ${PORT}`);
       logger.info(`API base path: ${apiVersion}`);
 

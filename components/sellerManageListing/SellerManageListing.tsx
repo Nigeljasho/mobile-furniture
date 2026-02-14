@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useProductStore } from "@/stores/productStore";
 import { Product } from "@/types";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -24,7 +24,14 @@ const SellerManageListing = ({ onClose }: SellerManageListingProps) => {
     const { fetchSellersListings, products, isLoading, removeProduct } = useProductStore();
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);  
     const [showEditModal, setShowEditModal] = useState(false);  
+    const hasShownMissingSellerAlert = useRef(false);
     const sellerId = user?.id;
+
+    const showMissingSellerAlert = () => {
+        if (hasShownMissingSellerAlert.current) return;
+        hasShownMissingSellerAlert.current = true;
+        Alert.alert("Logged Out", "You are logged out.");
+    };
 
     useEffect(() => {
         console.log("User object:", user);
@@ -33,7 +40,7 @@ const SellerManageListing = ({ onClose }: SellerManageListingProps) => {
         if (sellerId) {
             fetchSellersListings(sellerId);
         } else {
-            console.error("No seller ID found - user might not be logged in");
+            showMissingSellerAlert();
         }
     }, [sellerId, fetchSellersListings]);
  

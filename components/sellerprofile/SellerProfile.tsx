@@ -69,13 +69,13 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ onClose }) => {
 			 if (!id) return;
 			try {
 				await getProfile(id);
-			} catch (err) {
-				console.error("Failed to fetch seller profile", err);
+			} catch {
+				// Avoid noisy LogBox errors on device; keep UI stable on fetch failure.
 			}
 		};
 
 		loadProfile();
-	}, [token, getProfile, user, id]);
+	}, [token, getProfile, id]);
 
 	// Populate fields when user data is available
 	useEffect(() => {
@@ -108,8 +108,10 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ onClose }) => {
 							style={styles.avatarImage}
 						/>
 					</View>
-					<Text style={styles.shopTitle}>My Shop</Text>
-					<Text style={styles.shopLocation}>Kenya</Text>
+					<Text style={styles.shopTitle}>{user?.fullName || "Seller"}</Text>
+					<Text style={styles.shopLocation}>
+						{user?.location?.city || "N/A"}
+					</Text>
 				</View>
 
 				{/* Shop Details */}
@@ -172,8 +174,10 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ onClose }) => {
 			{/* Bottom Navigation */}
 			<View style={styles.bottomNav}>
 				<View style={styles.navItem}>
+					<TouchableOpacity onPress={onClose}>
 					<Ionicons name="home-outline" size={24} color="#7CB798" />
-					<Text style={[styles.navText, { color: "#7CB798" }]}>Home</Text>
+						<Text style={[styles.navText, { color: "#7CB798" }]}>Home</Text>
+					</TouchableOpacity>
 				</View>
 				<View style={styles.navItem}>
 					<Ionicons name="person-outline" size={24} color="#1B1B1B" />
