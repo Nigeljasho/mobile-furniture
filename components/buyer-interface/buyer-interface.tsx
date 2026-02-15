@@ -96,6 +96,8 @@ const BuyerInterface = () => {
 
   const renderProduct = ({ item }: any) => {
     const isInStock = item.stock > 0;
+    const sellerCity =
+      item?.sellerLocation?.city || item?.seller?.location?.city || null;
     return (
       <View style={styles.card}>
         <TouchableOpacity onPress={() => handleImagePress(item.image, item.id)}>
@@ -128,7 +130,9 @@ const BuyerInterface = () => {
         </Text>
         {/* location */}
         
-        <Text style={styles.locationInfo}>{item.sellerLocation.city}</Text>
+        <Text style={styles.locationInfo}>
+          {sellerCity ? sellerCity : "Location not available"}
+        </Text>
 
         <View style={styles.cardRow}>
           <Text style={styles.cardPrice}>

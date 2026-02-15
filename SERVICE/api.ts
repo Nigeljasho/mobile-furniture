@@ -1,14 +1,18 @@
 import { Product, RegisterInput, Review, makeOrder } from "@/types";
 import axios from "axios";
+import Constants from "expo-constants";
 
-const ApiUrl = process.env.EXPO_PUBLIC_API_URL;
+const ApiUrl =
+  process.env.EXPO_PUBLIC_API_URL ||
+  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
+  "https://mobile-furniture.onrender.com/api/v1";
 
 export const api = axios.create({
   baseURL: ApiUrl,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000,
+  timeout: 30000,
 });
 
 // Add token to requests automatically
@@ -49,18 +53,37 @@ export const registerUser = async (userData: RegisterInput) => {
 };
 
 export const loginUser = async (email: string, password: string) => {
-  const response = await api.post("/auth/login", { email, password });
-  const data = response.data;
-  return {
-    token: data.token,
-    user: {
-      id: data.user._id || data.user.id, // <-- map _id to id
-      fullName: data.user.fullName,
-      email: data.user.email,
-      role: data.user.role,
-      // add other fields if needed
-    },
-  };
+  try {
+    const response = await api.post("/auth/login", { email, password });
+    const data = response.data;
+    return {
+      token: data.token,
+      user: {
+        id: data.user._id || data.user.id, // <-- map _id to id
+        fullName: data.user.fullName,
+        email: data.user.email,
+        role: data.user.role,
+        // add other fields if needed
+      },
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === "ERR_NETWORK") {
+        throw new Error(
+          `Cannot connect to server. Check EXPO_PUBLIC_API_URL and backend status: ${ApiUrl}`,
+        );
+      }
+      if (error.code === "ECONNABORTED") {
+        throw new Error(
+          "Server took too long to respond. Try again in a few seconds.",
+        );
+      }
+      if (error.response) {
+        throw new Error(error.response.data?.message || "Login failed");
+      }
+    }
+    throw error;
+  }
 };
 
 export const getUserProfile = async (id: string) => {
@@ -272,7 +295,14 @@ export const order = async (payload: makeOrder) => {
   } catch (err) {
     console.error("Failed to make order:", err);
     if (axios.isAxiosError(err)) {
-      throw new Error(err.response?.data?.message || "Failed to create order");
+      const message = err.response?.data?.message || "Failed to create order";
+      const detail = err.response?.data?.error;
+      if (detail) {
+        const detailText =
+          typeof detail === "string" ? detail : JSON.stringify(detail);
+        throw new Error(`${message}: ${detailText}`);
+      }
+      throw new Error(message);
     }
     throw err;
   }

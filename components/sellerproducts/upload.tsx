@@ -26,7 +26,7 @@ const SellerProducts: React.FC<SellerProductsProps> = ({ onClose }) => {
 	const [price, setPrice] = useState("");
 	const [description, setDescription] = useState("");
 	const [category, setCategory] = useState("");
-	const [stock, setStock] = useState("1");
+	const [stock, setStock] = useState("");
 	const [location, setLocation] = useState("");
 	const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 	const [dropdownOpen, setDropdownOpen] = useState(false);

@@ -38,6 +38,18 @@ const formatPhoneNumber = (phone: string): string => {
   return cleaned;
 };
 
+const normalizeAccountReference = (value?: string): string => {
+  const cleaned = (value || "FurnitureApp").replace(/[^a-zA-Z0-9]/g, "");
+  return (cleaned || "FurnitureApp").slice(0, 12);
+};
+
+const normalizeTransactionDesc = (value?: string): string => {
+  const cleaned = (value || "Furniture payment")
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .trim();
+  return (cleaned || "Furniture").slice(0, 13);
+};
+
 async function initiatePayment({
   amount,
   products,
@@ -95,8 +107,8 @@ async function initiatePayment({
       PartyB: shortCode,
       PhoneNumber: formattedPhone, // ✅ Formatted phone
       CallBackURL: `${process.env.BASE_URL}/api/v1/mpesa/callback`,
-      AccountReference: accountReference || "FurnitureApp",
-      TransactionDesc: transactionDesc || "Payment for furniture",
+      AccountReference: normalizeAccountReference(accountReference),
+      TransactionDesc: normalizeTransactionDesc(transactionDesc),
     };
 
     logger.info("🚀 M-Pesa STK Push Request:", {
