@@ -7,6 +7,13 @@ import { logger } from "../utils/logger";
 
 const router = Router();
 
+const resolveCallbackUrl = () => {
+  const explicit = process.env.MPESA_CALLBACK_URL?.trim();
+  if (explicit) return explicit;
+  const baseUrl = process.env.BASE_URL?.trim() || "";
+  return `${baseUrl.replace(/\/+$/, "")}/api/v1/mpesa/callback`;
+};
+
 // Manual callback trigger for testing purposes
 router.post("/manual-callback/:transactionId", async (req, res) => {
   try {
@@ -95,10 +102,11 @@ router.post("/manual-callback/:transactionId", async (req, res) => {
 // Check callback configuration
 router.get("/callback-info", (req, res) => {
   const baseUrl = process.env.BASE_URL;
-  const callbackUrl = `${baseUrl}/api/v1/mpesa/callback`;
+  const callbackUrl = resolveCallbackUrl();
 
   return res.json({
     baseUrl,
+    mpesaCallbackEnv: process.env.MPESA_CALLBACK_URL || null,
     callbackUrl,
     message: "This is the callback URL that M-Pesa will call",
     note: "Make sure this URL is accessible from the internet (use ngrok for local testing)",

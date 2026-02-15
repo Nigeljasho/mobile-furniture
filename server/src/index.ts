@@ -89,9 +89,12 @@ connectDB()
         logger.info(`🧪 Stock will be reduced immediately and stay reduced`);
         logger.info(`🧪 Set TEST_MODE=false in .env to use real M-Pesa`);
       } else {
-        logger.info(
-          `🔔 M-Pesa Callback URL: ${process.env.BASE_URL}/api/v1/mpesa/callback`,
-        );
+        const explicitCallback = process.env.MPESA_CALLBACK_URL;
+        const fallbackBase = process.env.BASE_URL || "";
+        const callbackUrl =
+          explicitCallback ||
+          `${fallbackBase.replace(/\/+$/, "")}/api/v1/mpesa/callback`;
+        logger.info(`🔔 M-Pesa Callback URL: ${callbackUrl}`);
         logger.info(
           `⚠️  Make sure the BASE_URL in .env is accessible from the internet!`,
         );

@@ -50,6 +50,45 @@ const normalizeTransactionDesc = (value?: string): string => {
   return (cleaned || "Furniture").slice(0, 13);
 };
 
+const getCallbackUrl = (): string => {
+  const explicit = process.env.MPESA_CALLBACK_URL?.trim();
+  if (explicit) {
+    try {
+      const parsed = new URL(explicit);
+      if (parsed.protocol !== "https:") {
+        throw new Error("MPESA_CALLBACK_URL must use https");
+      }
+      return parsed.toString();
+    } catch {
+      throw new Error(
+        `Invalid MPESA_CALLBACK_URL: "${process.env.MPESA_CALLBACK_URL}"`,
+      );
+    }
+  }
+
+  const base = process.env.BASE_URL?.trim();
+  if (!base) {
+    throw new Error(
+      "Missing callback URL config. Set MPESA_CALLBACK_URL (recommended) or BASE_URL.",
+    );
+  }
+
+  try {
+    const parsedBase = new URL(base);
+    if (parsedBase.protocol !== "https:") {
+      throw new Error("BASE_URL must use https");
+    }
+
+    const basePath = parsedBase.pathname.replace(/\/+$/, "");
+    parsedBase.pathname = `${basePath}/api/v1/mpesa/callback`;
+    parsedBase.search = "";
+    parsedBase.hash = "";
+    return parsedBase.toString();
+  } catch {
+    throw new Error(`Invalid BASE_URL: "${process.env.BASE_URL}"`);
+  }
+};
+
 async function initiatePayment({
   amount,
   products,
@@ -106,7 +145,7 @@ async function initiatePayment({
       PartyA: formattedPhone, // ✅ Formatted phone
       PartyB: shortCode,
       PhoneNumber: formattedPhone, // ✅ Formatted phone
-      CallBackURL: `${process.env.BASE_URL}/api/v1/mpesa/callback`,
+      CallBackURL: getCallbackUrl(),
       AccountReference: normalizeAccountReference(accountReference),
       TransactionDesc: normalizeTransactionDesc(transactionDesc),
     };
