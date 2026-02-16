@@ -87,23 +87,29 @@ const toRad = (degrees: number): number => {
  * @returns Shipping fee in the local currency (KES)
  *
  * Pricing breakdown:
- * - 0-10 km: 500 KES
- * - 11-25 km: 800 KES
- * - 26-50 km: 1200 KES
- * - 51-100 km: 1800 KES
- * - 100+ km: 2500 KES
+ * - 0-10 km: 100 KES
+ * - 11-30 km: 500 KES
+ * - 31-50 km: 800 KES
+ * - 51-70 km: 1200 KES
+ * - 71-100 km: 1800 KES
+ * - 101-200 km: 2500 KES
+ * - 200+ km: 3000 KES
  */
 export const calculateShippingByDistance = (distanceKm: number): number => {
   if (distanceKm <= 10) {
+    return 100;
+  } else if (distanceKm <= 30) {
     return 500;
-  } else if (distanceKm <= 25) {
-    return 800;
   } else if (distanceKm <= 50) {
+    return 800;
+  } else if (distanceKm <= 70) {
     return 1200;
   } else if (distanceKm <= 100) {
     return 1800;
-  } else {
+  } else if (distanceKm <= 200) {
     return 2500;
+  } else {
+    return 3000;
   }
 };
 

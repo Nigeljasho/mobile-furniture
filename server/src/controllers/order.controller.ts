@@ -95,7 +95,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
     logger.info(`📍 Calculating shipping from seller (${sellerCity}) to buyer (${buyerCity})`);
 
     // Calculate shipping based on distance
-    let shipping = 1500; // Default fallback shipping fee
+    let shipping = 3000; // Default fallback shipping fee
     const shippingResult = await getShippingInfo(
       sellerCity,
       buyerCity,
@@ -560,7 +560,7 @@ export const calculateShippingCost = async (req: Request, res: Response) => {
       return res.status(200).json({
         message: "Using default shipping fee",
         distance: null,
-        fee: 1500,
+        fee: 3000,
         sellerCity,
         buyerCity,
       });
